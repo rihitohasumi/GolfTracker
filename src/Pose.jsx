@@ -6,11 +6,10 @@ import "@tensorflow/tfjs";
 import './style.css';
 const fs = require('fs');
 const { createFFmpeg, fetchFile } = require('@ffmpeg/ffmpeg');
-const ffmpeg = createFFmpeg({ log: true });
-
+const ffmpeg = createFFmpeg({ log: false });
 
 export default function Pose() {
-
+  const rate = '30';
   const [preview, setPreview] = useState('');
   const [model, setModel] = useState(null);
   const onDrop = (accepted, rejected, links) => {
@@ -56,11 +55,9 @@ export default function Pose() {
   let img_element;
   const loadImg = (fileName, index) => {
     return new Promise((resolve, reject) => {
-      console.log('loadImg promise');
       imgData = ffmpeg.FS('readFile', fileName);
       img_element = document.getElementById('movie_img');
       img_element.onload = () => {
-        console.log('onload');
         onImageChange(img_element, ffmpeg, `${fileName}`, index);
         resolve(img_element);
       };
@@ -68,37 +65,31 @@ export default function Pose() {
     });
   };
 
+  let fileSize = 0;
   const transcode = async ({ target: { files } }) => {
     const { name } = files[0];
     await ffmpeg.load();
-    console.log('ffmpeg writeFile files');
     ffmpeg.FS('writeFile', name, await fetchFile(files[0]));
-    console.log('ffmpeg out img file');
     ffmpeg.FS('mkdir', '/inImage');
-    await ffmpeg.run('-i', name, '-ss', '0', '-t', '2', '-r', '30', '-f', 'image2', '/inImage/%06d.jpg');
+    await ffmpeg.run('-i', name, '-r', rate, '-f', 'image2', '/inImage/%06d.jpg');
+
+    let inImageDir = ffmpeg.FS('readdir', '/inImage');
+    const regexp = /.jpg/g;
+    let inImageDirData = inImageDir.filter((val) => { return val.match(regexp); });
+    fileSize = inImageDirData.length;
 
     let fileName;
     var imgPromise = Promise.resolve();
     const loopImage = () => {
       return new Promise(async (resolve, reject) => {
-        for (var i = 1; i <= 60; i++) {
+        for (var i = 1; i <= fileSize; i++) {
           fileName = `/inImage/${(`000000${i}`).slice(-6)}.jpg`;
-          console.log(`ffmpeg readFile ${fileName}`);
           imgPromise = imgPromise.then(loadImg.bind(this, fileName, i));
         }
       });
     };
     var imgLoopPromise = Promise.resolve();
     imgLoopPromise = imgLoopPromise.then(loopImage.bind(this));
-    console.log('end');
-
-    // videoArray.map(async (id) => {
-    //   fileName = `${(`000000${index}`).slice(-6)}.jpg`;
-    //   console.log(`ffmpeg readFile ${fileName}`);
-    //   await loadImg(fileName);
-    //   index++;
-    //   console.log(`index:${index}`);
-    // });
   }
 
   const skeltoneDraw = (ctx, data) => {
@@ -162,21 +153,20 @@ export default function Pose() {
     ctx.stroke();
 
     // 左耳の線
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = '#0000cd';
-    ctx.beginPath();
-    ctx.setLineDash([2, 2]);
-    ctx.moveTo(data[3].position.x, data[3].position.y - 50);
-    ctx.lineTo(data[3].position.x, data[3].position.y);
-    ctx.lineTo(data[3].position.x, data[3].position.y + 300);
-    ctx.stroke();
+    // ctx.lineWidth = 1;
+    // ctx.strokeStyle = '#0000cd';
+    // ctx.beginPath();
+    // ctx.setLineDash([2, 2]);
+    // ctx.moveTo(data[3].position.x, data[3].position.y - 50);
+    // ctx.lineTo(data[3].position.x, data[3].position.y);
+    // ctx.lineTo(data[3].position.x, data[3].position.y + 300);
+    // ctx.stroke();
   };
 
   // const onImageChange = e => {
   const onImageChange = (img, ffmpeg, fileName, index) => {
     const c = document.getElementById("canvas");
     const ctx = c.getContext("2d");
-    console.log(`onImageChange:${fileName}`);
     cropToCanvas(img, c, ctx);
 
     model.estimateSinglePose(c).then(async prediction => {
@@ -187,7 +177,6 @@ export default function Pose() {
       });
       skeltoneDraw(ctx, prediction.keypoints);
       let outFileName = `${(`000000${index}`).slice(-6)}.jpg`;
-      console.log(`ffmpeg writeFile ${outFileName}`);
       ffmpeg.FS('writeFile', outFileName, await fetchFile(c.toDataURL('image/jpeg')));
 
       let imgElement = document.createElement('img');
@@ -195,13 +184,10 @@ export default function Pose() {
       const imgArea = document.getElementById("img_area");
       imgArea.appendChild(imgElement);
 
-      if (index === 60) {
-        console.log('ffmpeg out.mp4');
+      if (index === fileSize) {
         const changeMovie = async () => {
-          await ffmpeg.run('-r', '30', '-pattern_type', 'glob', '-i', '*.jpg', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', '30', 'out.mp4');
+          await ffmpeg.run('-r', rate, '-pattern_type', 'glob', '-i', '*.jpg', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-r', rate, 'out.mp4');
           let files = ffmpeg.FS('readdir', '/');
-          console.log('files /');
-          console.dir(files);
           const movie = ffmpeg.FS('readFile', 'out.mp4');
           const video_element = document.getElementById('movie');
           video_element.src = URL.createObjectURL(new Blob([movie.buffer]));
