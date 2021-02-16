@@ -1,10 +1,9 @@
-import logo from './logo.svg';
 import './App.css';
-import Pose from './Pose';
+import Bone from './Analyze/Bone';
 
 function App() {
   return (
-    <Pose />
+    <Bone />
   );
 }
 
