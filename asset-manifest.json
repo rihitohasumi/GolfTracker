@@ -1,21 +1,21 @@
 {
   "files": {
-    "main.css": "/static/css/main.079f8644.chunk.css",
-    "main.js": "/static/js/main.bef248ea.chunk.js",
-    "main.js.map": "/static/js/main.bef248ea.chunk.js.map",
-    "runtime-main.js": "/static/js/runtime-main.91c0bc5c.js",
-    "runtime-main.js.map": "/static/js/runtime-main.91c0bc5c.js.map",
-    "static/js/2.68e0123d.chunk.js": "/static/js/2.68e0123d.chunk.js",
-    "static/js/2.68e0123d.chunk.js.map": "/static/js/2.68e0123d.chunk.js.map",
-    "static/js/3.98cbcc24.chunk.js": "/static/js/3.98cbcc24.chunk.js",
-    "static/js/3.98cbcc24.chunk.js.map": "/static/js/3.98cbcc24.chunk.js.map",
-    "index.html": "/index.html",
-    "static/css/main.079f8644.chunk.css.map": "/static/css/main.079f8644.chunk.css.map",
-    "static/js/2.68e0123d.chunk.js.LICENSE.txt": "/static/js/2.68e0123d.chunk.js.LICENSE.txt"
+    "main.css": "/GolfTracker/static/css/main.079f8644.chunk.css",
+    "main.js": "/GolfTracker/static/js/main.bef248ea.chunk.js",
+    "main.js.map": "/GolfTracker/static/js/main.bef248ea.chunk.js.map",
+    "runtime-main.js": "/GolfTracker/static/js/runtime-main.99aa7d10.js",
+    "runtime-main.js.map": "/GolfTracker/static/js/runtime-main.99aa7d10.js.map",
+    "static/js/2.0e6f17a3.chunk.js": "/GolfTracker/static/js/2.0e6f17a3.chunk.js",
+    "static/js/2.0e6f17a3.chunk.js.map": "/GolfTracker/static/js/2.0e6f17a3.chunk.js.map",
+    "static/js/3.98cbcc24.chunk.js": "/GolfTracker/static/js/3.98cbcc24.chunk.js",
+    "static/js/3.98cbcc24.chunk.js.map": "/GolfTracker/static/js/3.98cbcc24.chunk.js.map",
+    "index.html": "/GolfTracker/index.html",
+    "static/css/main.079f8644.chunk.css.map": "/GolfTracker/static/css/main.079f8644.chunk.css.map",
+    "static/js/2.0e6f17a3.chunk.js.LICENSE.txt": "/GolfTracker/static/js/2.0e6f17a3.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
-    "static/js/runtime-main.91c0bc5c.js",
-    "static/js/2.68e0123d.chunk.js",
+    "static/js/runtime-main.99aa7d10.js",
+    "static/js/2.0e6f17a3.chunk.js",
     "static/css/main.079f8644.chunk.css",
     "static/js/main.bef248ea.chunk.js"
   ]
