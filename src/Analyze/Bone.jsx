@@ -5,9 +5,15 @@ import '@tensorflow/tfjs';
 import InputFile from '../Utils/InputFile';
 import { Box } from '@material-ui/core/';
 import { VideoSetting } from '../Common/VideoSetting';
+import Timeline from '@material-ui/lab/Timeline';
+import TimelineItem from '@material-ui/lab/TimelineItem';
+import TimelineSeparator from '@material-ui/lab/TimelineSeparator';
+import TimelineConnector from '@material-ui/lab/TimelineConnector';
+import TimelineContent from '@material-ui/lab/TimelineContent';
+import TimelineDot from '@material-ui/lab/TimelineDot';
 
 const { createFFmpeg, fetchFile } = require('@ffmpeg/ffmpeg');
-const ffmpeg = createFFmpeg({ log: false });
+const ffmpeg = createFFmpeg({ log: true });
 
 export default function Bone() {
   let fileSize = 0;
@@ -17,6 +23,9 @@ export default function Bone() {
   const [videoData, setVideoData] = useState(null);
   const [imgWidth, setImgWidth] = useState(0);
   const [imgHeight, setImgHeight] = useState(0);
+  const [timeLineColor1, setTimeLineColor1] = useState('grey');
+  const [timeLineColor2, setTimeLineColor2] = useState('grey');
+  const [timeLineColor3, setTimeLineColor3] = useState('grey');
   const cropToCanvas = (image, canvas, ctx) => {
     const naturalWidth = image.width;
     const naturalHeight = image.height;
@@ -68,6 +77,7 @@ export default function Bone() {
 
   const transcode = async ({ target: { files } }) => {
     setLoading(true);
+    setTimeLineColor1('secondary');
     const { name } = files[0];
     uploadFileName = name;
     await ffmpeg.load();
@@ -89,6 +99,8 @@ export default function Bone() {
         }
       });
     };
+    setTimeLineColor1('primary');
+    setTimeLineColor2('secondary');
     let imgLoopPromise = Promise.resolve();
     imgLoopPromise.then(loopImage.bind(this));
   }
@@ -164,8 +176,8 @@ export default function Bone() {
       ffmpeg.FS('unlink', `${VideoSetting.inImage}/${fileName}`);
       ffmpeg.FS('unlink', fileName);
     }
-    let readdir = ffmpeg.FS('readdir', '/');
-    console.dir(readdir);
+    // let readdir = ffmpeg.FS('readdir', '/');
+    // console.dir(readdir);
   }
 
   const onImageChange = (img, ffmpeg, fileName, index) => {
@@ -181,6 +193,8 @@ export default function Bone() {
       // TODO:もう少しいい方法を考える
       if (index === fileSize) {
         const changeMovie = async () => {
+          setTimeLineColor2('primary');
+          setTimeLineColor3('secondary');
           await ffmpeg.run(
             '-r', VideoSetting.rate,
             '-pattern_type', 'glob',
@@ -196,6 +210,7 @@ export default function Bone() {
 
           setVideoData(await fetchFile(URL.createObjectURL(new Blob([movie.buffer]))));
           memoryDataClear();
+          setTimeLineColor3('primary');
           setLoading(false);
         };
         changeMovie();
@@ -214,6 +229,9 @@ export default function Bone() {
   return (
     <>
       <Box display='flex' justifyContent='center' m={1} p={1}>
+        <h1>ゴルフスイング解析ツール（α版）</h1>
+      </Box>
+      <Box display='flex' justifyContent='center' m={1} p={1}>
         <InputFile
           id='movieInputFile'
           label='Movie Select'
@@ -222,6 +240,30 @@ export default function Bone() {
           onChange={transcode}
           loading={loading}
         />
+      </Box>
+      <Box display={loading ? 'flex' : 'none'} m={1} p={1}>
+        <Timeline align="alternate">
+          <TimelineItem>
+            <TimelineSeparator>
+              <TimelineDot color={timeLineColor1} />
+              <TimelineConnector />
+            </TimelineSeparator>
+            <TimelineContent>動画解析中</TimelineContent>
+          </TimelineItem>
+          <TimelineItem>
+            <TimelineSeparator>
+              <TimelineDot color={timeLineColor2} />
+              <TimelineConnector />
+            </TimelineSeparator>
+            <TimelineContent>ポーズ解析中</TimelineContent>
+          </TimelineItem>
+          <TimelineItem>
+            <TimelineSeparator>
+              <TimelineDot color={timeLineColor3} />
+            </TimelineSeparator>
+            <TimelineContent>動画再エンコード中</TimelineContent>
+          </TimelineItem>
+        </Timeline>
       </Box>
       <Box display={videoData !== null ? 'flex' : 'none'} m={1} p={1}>
         <video id='movie' controls />
