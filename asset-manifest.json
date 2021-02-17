@@ -1,22 +1,22 @@
 {
   "files": {
     "main.css": "/GolfTracker/static/css/main.079f8644.chunk.css",
-    "main.js": "/GolfTracker/static/js/main.bef248ea.chunk.js",
-    "main.js.map": "/GolfTracker/static/js/main.bef248ea.chunk.js.map",
-    "runtime-main.js": "/GolfTracker/static/js/runtime-main.99aa7d10.js",
-    "runtime-main.js.map": "/GolfTracker/static/js/runtime-main.99aa7d10.js.map",
-    "static/js/2.0e6f17a3.chunk.js": "/GolfTracker/static/js/2.0e6f17a3.chunk.js",
-    "static/js/2.0e6f17a3.chunk.js.map": "/GolfTracker/static/js/2.0e6f17a3.chunk.js.map",
-    "static/js/3.98cbcc24.chunk.js": "/GolfTracker/static/js/3.98cbcc24.chunk.js",
-    "static/js/3.98cbcc24.chunk.js.map": "/GolfTracker/static/js/3.98cbcc24.chunk.js.map",
+    "main.js": "/GolfTracker/static/js/main.8ab26ba7.chunk.js",
+    "main.js.map": "/GolfTracker/static/js/main.8ab26ba7.chunk.js.map",
+    "runtime-main.js": "/GolfTracker/static/js/runtime-main.584e1f98.js",
+    "runtime-main.js.map": "/GolfTracker/static/js/runtime-main.584e1f98.js.map",
+    "static/js/2.f97d59b0.chunk.js": "/GolfTracker/static/js/2.f97d59b0.chunk.js",
+    "static/js/2.f97d59b0.chunk.js.map": "/GolfTracker/static/js/2.f97d59b0.chunk.js.map",
+    "static/js/3.5a7c6045.chunk.js": "/GolfTracker/static/js/3.5a7c6045.chunk.js",
+    "static/js/3.5a7c6045.chunk.js.map": "/GolfTracker/static/js/3.5a7c6045.chunk.js.map",
     "index.html": "/GolfTracker/index.html",
     "static/css/main.079f8644.chunk.css.map": "/GolfTracker/static/css/main.079f8644.chunk.css.map",
-    "static/js/2.0e6f17a3.chunk.js.LICENSE.txt": "/GolfTracker/static/js/2.0e6f17a3.chunk.js.LICENSE.txt"
+    "static/js/2.f97d59b0.chunk.js.LICENSE.txt": "/GolfTracker/static/js/2.f97d59b0.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
-    "static/js/runtime-main.99aa7d10.js",
-    "static/js/2.0e6f17a3.chunk.js",
+    "static/js/runtime-main.584e1f98.js",
+    "static/js/2.f97d59b0.chunk.js",
     "static/css/main.079f8644.chunk.css",
-    "static/js/main.bef248ea.chunk.js"
+    "static/js/main.8ab26ba7.chunk.js"
   ]
 }
