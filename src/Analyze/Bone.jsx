@@ -2,24 +2,66 @@ import React, { useState, useEffect, useRef } from 'react';
 import './style.css';
 import * as posenet from '@tensorflow-models/posenet';
 import '@tensorflow/tfjs';
-import InputFile from '../Utils/InputFile';
-import { Box } from '@material-ui/core/';
+import { Box, Paper } from '@material-ui/core/';
 import { VideoSetting } from '../Common/VideoSetting';
-import Timeline from '@material-ui/lab/Timeline';
-import TimelineItem from '@material-ui/lab/TimelineItem';
-import TimelineSeparator from '@material-ui/lab/TimelineSeparator';
-import TimelineConnector from '@material-ui/lab/TimelineConnector';
-import TimelineContent from '@material-ui/lab/TimelineContent';
-import TimelineDot from '@material-ui/lab/TimelineDot';
+import PoseNetForm from './PoseNetForm';
+import { makeStyles } from '@material-ui/core/styles';
+import SnackBar from '../Utils/SnackBar';
+import TimeLine from './TimeLine';
 
 const { createFFmpeg, fetchFile } = require('@ffmpeg/ffmpeg');
-const ffmpeg = createFFmpeg({ log: true });
+const ffmpeg = createFFmpeg({ log: false });
+const useStyles = makeStyles((theme) => ({
+  appBar: {
+    position: 'relative',
+  },
+  layout: {
+    width: 'auto',
+    marginLeft: theme.spacing(2),
+    marginRight: theme.spacing(2),
+    [theme.breakpoints.up(600 + theme.spacing(2) * 2)]: {
+      width: 600,
+      marginLeft: 'auto',
+      marginRight: 'auto',
+    },
+  },
+  paper: {
+    marginTop: theme.spacing(3),
+    marginBottom: theme.spacing(3),
+    padding: theme.spacing(2),
+    [theme.breakpoints.up(600 + theme.spacing(3) * 2)]: {
+      marginTop: theme.spacing(6),
+      marginBottom: theme.spacing(6),
+      padding: theme.spacing(3),
+    },
+  },
+  stepper: {
+    padding: theme.spacing(3, 0, 5),
+  },
+  buttons: {
+    display: 'flex',
+    justifyContent: 'flex-end',
+  },
+  button: {
+    marginTop: theme.spacing(3),
+    marginLeft: theme.spacing(1),
+  },
+}));
 
 export default function Bone() {
+  const classes = useStyles();
   let fileSize = 0;
   let uploadFileName = '';
+  const settingRef = useRef();
   const [loading, setLoading] = useState(false);
-  const [model, setModel] = useState(null);
+  const [model, setModel] = useState({
+    architecture: 'ResNet50',
+    outputStride: 32,
+    quantBytes: 4
+  });
+  const [snackBarOpen, setSnackBarOpen] = useState(false);
+  const [snackBarMessage, setSnackBarMessage] = useState('');
+  const [snackBarSeverity, setSnackBarSeverity] = useState('');
   const [videoData, setVideoData] = useState(null);
   const [imgWidth, setImgWidth] = useState(0);
   const [imgHeight, setImgHeight] = useState(0);
@@ -76,33 +118,42 @@ export default function Bone() {
   };
 
   const transcode = async ({ target: { files } }) => {
-    setLoading(true);
-    setTimeLineColor1('secondary');
-    const { name } = files[0];
-    uploadFileName = name;
-    await ffmpeg.load();
-    ffmpeg.FS('writeFile', name, await fetchFile(files[0]));
-    ffmpeg.FS('mkdir', VideoSetting.inImage);
-    await ffmpeg.run('-i', name, '-r', VideoSetting.rate, '-f', 'image2', `${VideoSetting.inImage}/${VideoSetting.imgFileName}`);
+    await posenet.load(settingRef.current.getSetting()).then(async model => {
+      console.log('then');
+      setLoading(true);
+      setTimeLineColor1('secondary');
+      setModel(model);
+      const { name } = files[0];
+      uploadFileName = name;
+      await ffmpeg.load();
+      ffmpeg.FS('writeFile', name, await fetchFile(files[0]));
+      ffmpeg.FS('mkdir', VideoSetting.inImage);
+      await ffmpeg.run('-i', name, '-r', VideoSetting.rate, '-f', 'image2', `${VideoSetting.inImage}/${VideoSetting.imgFileName}`);
 
-    let inImageDir = ffmpeg.FS('readdir', VideoSetting.inImage);
-    let inImageDirData = inImageDir.filter((val) => { return val.match(VideoSetting.regexp); });
-    fileSize = inImageDirData.length;
+      let inImageDir = ffmpeg.FS('readdir', VideoSetting.inImage);
+      let inImageDirData = inImageDir.filter((val) => { return val.match(VideoSetting.regexp); });
+      fileSize = inImageDirData.length;
 
-    let imgPromise = Promise.resolve();
-    const loopImage = () => {
-      let fileName;
-      return new Promise(async (resolve, reject) => {
-        for (var i = 1; i <= fileSize; i++) {
-          fileName = `${VideoSetting.inImage}/${(`000000${i}`).slice(-6)}${VideoSetting.exp}`;
-          imgPromise = imgPromise.then(loadImg.bind(this, fileName, i));
-        }
-      });
-    };
-    setTimeLineColor1('primary');
-    setTimeLineColor2('secondary');
-    let imgLoopPromise = Promise.resolve();
-    imgLoopPromise.then(loopImage.bind(this));
+      let imgPromise = Promise.resolve();
+      const loopImage = () => {
+        let fileName;
+        return new Promise(async (resolve, reject) => {
+          for (var i = 1; i <= fileSize; i++) {
+            fileName = `${VideoSetting.inImage}/${(`000000${i}`).slice(-6)}${VideoSetting.exp}`;
+            imgPromise = imgPromise.then(loadImg.bind(this, fileName, i));
+          }
+        });
+      };
+      setTimeLineColor1('primary');
+      setTimeLineColor2('secondary');
+      let imgLoopPromise = Promise.resolve();
+      imgLoopPromise.then(loopImage.bind(this));
+    }).catch(e => {
+      console.error(`error : ${e}`);
+      setSnackBarOpen(true);
+      setSnackBarMessage(`設定に誤りがあります。${e}`);
+      setSnackBarSeverity('error');
+    });
   }
 
   const skeltoneDraw = (ctx, data) => {
@@ -176,8 +227,6 @@ export default function Bone() {
       ffmpeg.FS('unlink', `${VideoSetting.inImage}/${fileName}`);
       ffmpeg.FS('unlink', fileName);
     }
-    // let readdir = ffmpeg.FS('readdir', '/');
-    // console.dir(readdir);
   }
 
   const onImageChange = (img, ffmpeg, fileName, index) => {
@@ -231,43 +280,29 @@ export default function Bone() {
       <Box display='flex' justifyContent='center' m={1} p={1}>
         <h1>ゴルフスイング解析ツール（α版）</h1>
       </Box>
-      <Box display='flex' justifyContent='center' m={1} p={1}>
-        <InputFile
-          id='movieInputFile'
-          label='Movie Select'
-          accept='video/*'
-          buttonProps={{ color: 'primary' }}
-          onChange={transcode}
-          loading={loading}
+      <main display={loading ? 'none' : 'flex'} className={classes.layout}>
+        <Paper className={classes.paper}>
+          <PoseNetForm transcode={transcode} loading={loading} ref={settingRef} />
+        </Paper>
+      </main>
+      <Box display={loading ? 'flex' : 'none'} m={1} p={1}>
+        <TimeLine
+          timeLineColor1={timeLineColor1}
+          timeLineColor2={timeLineColor2}
+          timeLineColor3={timeLineColor3}
         />
       </Box>
-      <Box display={loading ? 'flex' : 'none'} m={1} p={1}>
-        <Timeline align="alternate">
-          <TimelineItem>
-            <TimelineSeparator>
-              <TimelineDot color={timeLineColor1} />
-              <TimelineConnector />
-            </TimelineSeparator>
-            <TimelineContent>動画解析中</TimelineContent>
-          </TimelineItem>
-          <TimelineItem>
-            <TimelineSeparator>
-              <TimelineDot color={timeLineColor2} />
-              <TimelineConnector />
-            </TimelineSeparator>
-            <TimelineContent>ポーズ解析中</TimelineContent>
-          </TimelineItem>
-          <TimelineItem>
-            <TimelineSeparator>
-              <TimelineDot color={timeLineColor3} />
-            </TimelineSeparator>
-            <TimelineContent>動画再エンコード中</TimelineContent>
-          </TimelineItem>
-        </Timeline>
-      </Box>
-      <Box display={videoData !== null ? 'flex' : 'none'} m={1} p={1}>
+      <Box justifyContent='center'
+        display={videoData !== null ? 'flex' : 'none'} m={1} p={1}
+        style={{ marginBottom: '100px' }}>
         <video id='movie' controls />
       </Box>
+      <SnackBar
+        open={snackBarOpen}
+        setOpen={setSnackBarOpen}
+        message={snackBarMessage}
+        severity={snackBarSeverity}
+      />
     </>
   );
 }
