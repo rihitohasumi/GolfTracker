@@ -49,6 +49,7 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export default function Bone() {
+
   const classes = useStyles();
   let fileSize = 0;
   let uploadFileName = '';
@@ -137,7 +138,7 @@ export default function Bone() {
       let imgPromise = Promise.resolve();
       const loopImage = () => {
         let fileName;
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
           for (var i = 1; i <= fileSize; i++) {
             fileName = `${VideoSetting.inImage}/${(`000000${i}`).slice(-6)}${VideoSetting.exp}`;
             imgPromise = imgPromise.then(loadImg.bind(this, fileName, i));
