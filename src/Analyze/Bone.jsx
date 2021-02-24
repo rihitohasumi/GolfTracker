@@ -2,12 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import './style.css';
 import * as posenet from '@tensorflow-models/posenet';
 import '@tensorflow/tfjs';
-import { Box, Paper } from '@material-ui/core/';
+import { Box, Paper, Grid, Accordion, AccordionSummary, AccordionDetails, Typography } from '@material-ui/core/';
 import { VideoSetting } from '../Common/VideoSetting';
 import PoseNetForm from './PoseNetForm';
 import { makeStyles } from '@material-ui/core/styles';
 import SnackBar from '../Utils/SnackBar';
 import TimeLine from './TimeLine';
+import MagicDropzone from 'react-magic-dropzone';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import { skeltoneDraw } from '../Utils/SkeltoneDraw';
+// import backSwing from './img/backSwing.png';
+// import frontSwing from './img/frontSwing.png';
 
 const { createFFmpeg, fetchFile } = require('@ffmpeg/ffmpeg');
 const ffmpeg = createFFmpeg({ log: false });
@@ -69,6 +74,8 @@ export default function Bone() {
   const [timeLineColor1, setTimeLineColor1] = useState('grey');
   const [timeLineColor2, setTimeLineColor2] = useState('grey');
   const [timeLineColor3, setTimeLineColor3] = useState('grey');
+  const [videoView1, setVideoView1] = useState(false);
+  const [videoView2, setVideoView2] = useState(false);
   const cropToCanvas = (image, canvas, ctx) => {
     const naturalWidth = image.width;
     const naturalHeight = image.height;
@@ -118,9 +125,43 @@ export default function Bone() {
     });
   };
 
-  const transcode = async ({ target: { files } }) => {
+  const changeMovie = async (videoArea) => {
+    setTimeLineColor2('primary');
+    setTimeLineColor3('secondary');
+    await ffmpeg.run(
+      '-r', VideoSetting.rate,
+      '-pattern_type', 'glob',
+      '-i', `*${VideoSetting.exp}`,
+      '-c:v', 'libx264',
+      '-pix_fmt', 'yuv420p',
+      '-r', VideoSetting.rate,
+      VideoSetting.videoFileName
+    );
+    const movie = ffmpeg.FS('readFile', 'out.mp4');
+    const videoElement = document.getElementById(videoArea);
+    videoElement.src = URL.createObjectURL(new Blob([movie.buffer]));
+
+    setVideoData(await fetchFile(URL.createObjectURL(new Blob([movie.buffer]))));
+    memoryDataClear();
+    setTimeLineColor3('primary');
+    setLoading(false);
+  };
+
+  let imgPromise = Promise.resolve();
+  const loopImage = () => {
+    let fileName;
+    return new Promise(async (resolve, reject) => {
+      for (var i = 1; i <= fileSize; i++) {
+        fileName = `${VideoSetting.inImage}/${(`000000${i}`).slice(-6)}${VideoSetting.exp}`;
+        await imgPromise.then(loadImg.bind(this, fileName, i));
+      }
+      resolve(true);
+    });
+  };
+
+  // const transcode = async ({ target: { files } }) => {
+  const transcode = async (files, videoArea) => {
     await posenet.load(settingRef.current.getSetting()).then(async model => {
-      console.log('then');
       setLoading(true);
       setTimeLineColor1('secondary');
       setModel(model);
@@ -135,88 +176,19 @@ export default function Bone() {
       let inImageDirData = inImageDir.filter((val) => { return val.match(VideoSetting.regexp); });
       fileSize = inImageDirData.length;
 
-      let imgPromise = Promise.resolve();
-      const loopImage = () => {
-        let fileName;
-        return new Promise((resolve, reject) => {
-          for (var i = 1; i <= fileSize; i++) {
-            fileName = `${VideoSetting.inImage}/${(`000000${i}`).slice(-6)}${VideoSetting.exp}`;
-            imgPromise = imgPromise.then(loadImg.bind(this, fileName, i));
-          }
-        });
-      };
+      await loopImage();
+
       setTimeLineColor1('primary');
       setTimeLineColor2('secondary');
       let imgLoopPromise = Promise.resolve();
-      imgLoopPromise.then(loopImage.bind(this));
+      await imgLoopPromise.then(loopImage.bind(this));
+      changeMovie(videoArea);
     }).catch(e => {
       console.error(`error : ${e}`);
       setSnackBarOpen(true);
       setSnackBarMessage(`設定に誤りがあります。${e}`);
       setSnackBarSeverity('error');
     });
-  }
-
-  const skeltoneDraw = (ctx, data) => {
-    ctx.clearRect(0, 0, imgWidth, imgHeight);
-    ctx.lineWidth = 3;
-    // 肩
-    ctx.strokeStyle = '#191970';
-    ctx.beginPath();
-    ctx.moveTo(data[5].position.x, data[5].position.y);
-    ctx.lineTo(data[6].position.x, data[6].position.y);
-    ctx.stroke();
-
-    // 右腕
-    ctx.strokeStyle = '#ff8c00';
-    ctx.beginPath();
-    ctx.moveTo(data[6].position.x, data[6].position.y);
-    ctx.lineTo(data[8].position.x, data[8].position.y);
-    ctx.lineTo(data[10].position.x, data[10].position.y);
-    ctx.stroke();
-
-    // 左腕
-    ctx.strokeStyle = '#00ffff';
-    ctx.beginPath();
-    ctx.moveTo(data[5].position.x, data[5].position.y);
-    ctx.lineTo(data[7].position.x, data[7].position.y);
-    ctx.lineTo(data[9].position.x, data[9].position.y);
-    ctx.stroke();
-
-    // 上半身下半身
-    ctx.strokeStyle = '#7cfc00';
-    ctx.beginPath();
-    ctx.moveTo(data[5].position.x, data[5].position.y);
-    ctx.lineTo(data[11].position.x, data[11].position.y);
-    ctx.stroke();
-    ctx.strokeStyle = '#7cfc00';
-    ctx.beginPath();
-    ctx.moveTo(data[6].position.x, data[6].position.y);
-    ctx.lineTo(data[12].position.x, data[12].position.y);
-    ctx.stroke();
-
-    // ヒップ
-    ctx.strokeStyle = '#3cb371';
-    ctx.beginPath();
-    ctx.moveTo(data[11].position.x, data[11].position.y);
-    ctx.lineTo(data[12].position.x, data[12].position.y);
-    ctx.stroke();
-
-    // 右足
-    ctx.strokeStyle = '#ff7f50';
-    ctx.beginPath();
-    ctx.moveTo(data[12].position.x, data[12].position.y);
-    ctx.lineTo(data[14].position.x, data[14].position.y);
-    ctx.lineTo(data[16].position.x, data[16].position.y);
-    ctx.stroke();
-
-    // 左足
-    ctx.strokeStyle = '#f0e68c';
-    ctx.beginPath();
-    ctx.moveTo(data[11].position.x, data[11].position.y);
-    ctx.lineTo(data[13].position.x, data[13].position.y);
-    ctx.lineTo(data[15].position.x, data[15].position.y);
-    ctx.stroke();
   };
 
   const memoryDataClear = () => {
@@ -228,7 +200,7 @@ export default function Bone() {
       ffmpeg.FS('unlink', `${VideoSetting.inImage}/${fileName}`);
       ffmpeg.FS('unlink', fileName);
     }
-  }
+  };
 
   const onImageChange = (img, ffmpeg, fileName, index) => {
     const c = document.createElement('canvas');
@@ -236,39 +208,13 @@ export default function Bone() {
     cropToCanvas(img, c, ctx);
 
     model.estimateSinglePose(c).then(async prediction => {
-      skeltoneDraw(ctx, prediction.keypoints);
+      skeltoneDraw(ctx, prediction.keypoints, imgWidth, imgHeight);
       let outFileName = `${(`000000${index}`).slice(-6)}${VideoSetting.exp}`;
       ffmpeg.FS('writeFile', outFileName, await fetchFile(c.toDataURL(VideoSetting.imgAccept)));
-
-      // TODO:もう少しいい方法を考える
-      if (index === fileSize) {
-        const changeMovie = async () => {
-          setTimeLineColor2('primary');
-          setTimeLineColor3('secondary');
-          await ffmpeg.run(
-            '-r', VideoSetting.rate,
-            '-pattern_type', 'glob',
-            '-i', `*${VideoSetting.exp}`,
-            '-c:v', 'libx264',
-            '-pix_fmt', 'yuv420p',
-            '-r', VideoSetting.rate,
-            VideoSetting.videoFileName
-          );
-          const movie = ffmpeg.FS('readFile', 'out.mp4');
-          const videoElement = document.getElementById('movie');
-          videoElement.src = URL.createObjectURL(new Blob([movie.buffer]));
-
-          setVideoData(await fetchFile(URL.createObjectURL(new Blob([movie.buffer]))));
-          memoryDataClear();
-          setTimeLineColor3('primary');
-          setLoading(false);
-        };
-        changeMovie();
-      }
     });
 
     return true;
-  }
+  };
 
   useEffect(() => {
     posenet.load().then(model => {
@@ -281,11 +227,68 @@ export default function Bone() {
       <Box display='flex' justifyContent='center' m={1} p={1}>
         <h1>ゴルフスイング解析ツール（α版）</h1>
       </Box>
-      <main display={loading ? 'none' : 'flex'} className={classes.layout}>
-        <Paper className={classes.paper}>
-          <PoseNetForm transcode={transcode} loading={loading} ref={settingRef} />
-        </Paper>
-      </main>
+      <Grid container spacing={3}>
+        <Grid item xs={6} className='drop-zone-grid-1'>
+          <MagicDropzone
+            className='drop-zone'
+            accept='video/*'
+            onDrop={(accepted, rejected, links) => {
+              transcode(accepted, 'movie_1');
+            }}
+            display={!videoView1 ? 'flex' : 'none'}
+          >
+            Drop Comparison Movie1
+          </MagicDropzone>
+          <Box
+            justifyContent='center'
+            display={videoView1 ? 'flex' : 'none'}
+            m={1}
+            p={1}
+            style={{ marginBottom: '100px' }}>
+            <video id='movie_1' controls />
+          </Box>
+        </Grid>
+        <Grid item xs={6} className='drop-zone-grid-2'>
+          <MagicDropzone
+            className='drop-zone'
+            accept='video/*'
+            onDrop={(accepted, rejected, links) => {
+              transcode(accepted, 'movie_2');
+            }}
+            display={!videoView2 ? 'flex' : 'none'}
+          >
+            Drop Comparison Movie2
+          </MagicDropzone>
+          <Box
+            justifyContent='center'
+            display={videoView2 ? 'flex' : 'none'}
+            m={1}
+            p={1}
+            style={{ marginBottom: '100px' }}>
+            <video id='movie_2' controls />
+          </Box>
+        </Grid>
+      </Grid>
+      <Grid container spacing={3} display={loading ? 'none' : 'flex'}>
+        <Grid item xs={12} style={{ padding: '2em' }}>
+          <Accordion>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              aria-controls="panel1a-content"
+              id="panel1a-header"
+            >
+              <Typography className={classes.heading}>解析設定</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <main className={classes.layout}>
+                <Paper className={classes.paper}>
+                  <PoseNetForm transcode={transcode} loading={loading} ref={settingRef} />
+                </Paper>
+              </main>
+            </AccordionDetails>
+          </Accordion>
+        </Grid>
+      </Grid>
       <Box display={loading ? 'flex' : 'none'} m={1} p={1}>
         <TimeLine
           timeLineColor1={timeLineColor1}
@@ -293,11 +296,11 @@ export default function Bone() {
           timeLineColor3={timeLineColor3}
         />
       </Box>
-      <Box justifyContent='center'
+      {/* <Box justifyContent='center'
         display={videoData !== null ? 'flex' : 'none'} m={1} p={1}
         style={{ marginBottom: '100px' }}>
         <video id='movie' controls />
-      </Box>
+      </Box> */}
       <SnackBar
         open={snackBarOpen}
         setOpen={setSnackBarOpen}

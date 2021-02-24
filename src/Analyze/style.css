@@ -15,13 +15,20 @@ body {
   box-sizing: border-box;
 }
 
-.Dropzone-img {
+/* .Dropzone-img {
   border: thin solid rgba(64, 64, 64, 0.15);
   border-radius: 4px;
   object-fit: cover;
+} */
+
+.drop-zone-grid-1 {
+  padding: 1em 1em 1em 2em !important;
+}
+.drop-zone-grid-2 {
+  padding: 1em 2em 1em 1em !important;
 }
 
-.Dropzone {
+.drop-zone {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -31,9 +38,12 @@ body {
   padding: 10px;
   border-radius: 5px;
   position: relative;
+  width: 100%;
+  height: 100%;
+  /* margin: 1em; */
 }
 
-.Dropzone-page {
+/* .Dropzone-page {
   padding: 40px;
   display: flex;
   align-items: center;
@@ -57,4 +67,4 @@ body {
 
 #imgCanvas,#movieImg,#inputFile {
   display: none;
-}
+} */
